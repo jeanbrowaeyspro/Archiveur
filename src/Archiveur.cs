@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -43,18 +44,33 @@ static class Archiveur
     [STAThread]
     static int Main(string[] args)
     {
+        Application.EnableVisualStyles();
         bool quiet = Array.IndexOf(args, "--quiet") >= 0;
         if (Array.IndexOf(args, "--install") >= 0) return Installer(quiet);
         if (Array.IndexOf(args, "--uninstall") >= 0) return Desinstaller(quiet);
         if (args.Length == 0) return ProposerInstallation();
 
+        var dossiers = new List<string>();
+        foreach (string arg in args) if (!arg.StartsWith("--")) dossiers.Add(arg);
+
+        // L'archivage tourne dans un thread ; la fenêtre de progression s'affiche toujours
+        // et se ferme dès qu'il est fini (aucun message de fin).
         var erreurs = new List<string>();
-        foreach (string arg in args)
+        var progression = new Progression();
+        var travail = new Thread(() =>
         {
-            if (arg.StartsWith("--")) continue;
-            try { Zipper(arg); }
-            catch (Exception ex) { erreurs.Add(arg + "\n  " + ex.Message); }
-        }
+            for (int i = 0; i < dossiers.Count && !progression.Annule; i++)
+            {
+                progression.Demarrer(dossiers[i], i + 1, dossiers.Count);
+                try { Zipper(dossiers[i], progression); }
+                catch (OperationCanceledException) { }
+                catch (Exception ex) { erreurs.Add(dossiers[i] + "\n  " + ex.Message); }
+            }
+        });
+        travail.Start();
+        if (!quiet) Application.Run(new FenetreProgression(progression, travail));
+        travail.Join();
+
         if (erreurs.Count == 0) return 0;
         if (!quiet) Message("Échec de l'archivage :\n\n" + string.Join("\n\n", erreurs), MessageBoxIcon.Error);
         else Console.Error.WriteLine(string.Join("\n", erreurs));
@@ -62,8 +78,8 @@ static class Archiveur
     }
 
     // Crée <parent>\<nom>_AAAAMMJJ-HHMM.zip contenant le dossier lui-même (comme Compress-Archive).
-    // Le zip est écrit sous un nom temporaire puis renommé : jamais de zip incomplet en cas d'échec.
-    public static string Zipper(string chemin)
+    // Le zip est écrit sous un nom temporaire puis renommé : jamais de zip incomplet en cas d'échec ou d'annulation.
+    public static string Zipper(string chemin, Progression progression)
     {
         string dossier = Path.GetFullPath(chemin.Trim('"')).TrimEnd('\\');
         if (!Directory.Exists(dossier)) throw new DirectoryNotFoundException("Dossier introuvable.");
@@ -78,7 +94,9 @@ static class Archiveur
         try
         {
             if (File.Exists(temporaire)) File.Delete(temporaire);
-            ZipFile.CreateFromDirectory(dossier, temporaire, CompressionLevel.Optimal, true);
+            using (var flux = new FileStream(temporaire, FileMode.CreateNew))
+            using (var archive = new ZipArchive(flux, ZipArchiveMode.Create))
+                Remplir(archive, dossier, progression);
             File.Move(temporaire, zip);
         }
         catch
@@ -87,6 +105,59 @@ static class Archiveur
             throw;
         }
         return zip;
+    }
+
+    // Ajoute le dossier (fichiers et sous-dossiers vides) sous "<nom>/", en suivant l'avancement en octets.
+    static void Remplir(ZipArchive archive, string dossier, Progression progression)
+    {
+        string racine = Path.GetFileName(dossier);
+        string[] fichiers = Directory.GetFiles(dossier, "*", SearchOption.AllDirectories);
+        long total = 0;
+        foreach (string f in fichiers) total += new FileInfo(f).Length;
+        progression.Total = total;
+
+        foreach (string sousDossier in Directory.GetDirectories(dossier, "*", SearchOption.AllDirectories))
+            if (Directory.GetFileSystemEntries(sousDossier).Length == 0)
+                archive.CreateEntry(NomEntree(racine, dossier, sousDossier) + "/");
+
+        var tampon = new byte[1 << 20];
+        foreach (string f in fichiers)
+        {
+            string nom = NomEntree(racine, dossier, f);
+            progression.Fichier = nom;
+            try
+            {
+                ZipArchiveEntry entree = archive.CreateEntry(nom, CompressionLevel.Optimal);
+                entree.LastWriteTime = DateZip(File.GetLastWriteTime(f));
+                // FileShare.ReadWrite : accepte aussi les fichiers ouverts par un autre logiciel (journaux…).
+                using (var source = new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                using (Stream cible = entree.Open())
+                {
+                    int lus;
+                    while ((lus = source.Read(tampon, 0, tampon.Length)) > 0)
+                    {
+                        if (progression.Annule) throw new OperationCanceledException();
+                        cible.Write(tampon, 0, lus);
+                        Interlocked.Add(ref progression.Fait, lus);
+                    }
+                }
+            }
+            catch (IOException ex) { throw new IOException(nom + " : " + ex.Message, ex); }
+            catch (UnauthorizedAccessException ex) { throw new IOException(nom + " : " + ex.Message, ex); }
+        }
+    }
+
+    static string NomEntree(string racine, string dossier, string chemin)
+    {
+        return racine + "/" + chemin.Substring(dossier.Length + 1).Replace('\\', '/');
+    }
+
+    // Le format zip ne stocke que les dates de 1980 à 2107.
+    static DateTimeOffset DateZip(DateTime date)
+    {
+        if (date.Year < 1980) return new DateTime(1980, 1, 1);
+        if (date.Year > 2107) return new DateTime(2107, 12, 31);
+        return date;
     }
 
     static int ProposerInstallation()
