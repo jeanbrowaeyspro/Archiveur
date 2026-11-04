@@ -24,8 +24,7 @@ using Microsoft.Win32;
 
 static class Archiveur
 {
-    const string Titre = "Archiveur";
-    const string Libelle = "Archivage horodaté";
+    internal const string Libelle = "Archivage horodaté";
     const string Cle = "ArchiveurZip";
     static readonly string[] ClesShell =
     {
@@ -33,12 +32,10 @@ static class Archiveur
         @"Software\Classes\Directory\Background\shell\" + Cle,
     };
 
-    static string DossierInstallation
-    {
-        get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Archiveur"); }
-    }
+    // Redirigeable par les essais.
+    internal static string DossierInstallation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Archiveur");
 
-    static string ExeInstalle
+    internal static string ExeInstalle
     {
         get { return Path.Combine(DossierInstallation, "Archiveur.exe"); }
     }
@@ -47,6 +44,7 @@ static class Archiveur
     static int Main(string[] args)
     {
         Application.EnableVisualStyles();
+        MiseAJour.SupprimerAncienExe();
         bool quiet = Array.IndexOf(args, "--quiet") >= 0;
         if (Array.IndexOf(args, "--install") >= 0) return Installer(quiet);
         if (Array.IndexOf(args, "--uninstall") >= 0) return Desinstaller(quiet);
@@ -70,13 +68,20 @@ static class Archiveur
             }
         });
         travail.Start();
-        if (!quiet) Application.Run(new FenetreProgression(progression, travail));
+        if (!quiet)
+        {
+            MiseAJour.LancerVerification();
+            Application.Run(new FenetreProgression(progression, travail));
+        }
         travail.Join();
 
-        if (erreurs.Count == 0) return 0;
-        if (!quiet) Message("Échec de l'archivage :\n\n" + string.Join("\n\n", erreurs), MessageBoxIcon.Error);
-        else Console.Error.WriteLine(string.Join("\n", erreurs));
-        return 1;
+        if (erreurs.Count > 0)
+        {
+            if (!quiet) Message("Échec de l'archivage :\n\n" + string.Join("\n\n", erreurs), MessageBoxIcon.Error);
+            else Console.Error.WriteLine(string.Join("\n", erreurs));
+        }
+        if (!quiet) MiseAJour.Proposer();
+        return erreurs.Count == 0 ? 0 : 1;
     }
 
     // Crée <parent>\<nom>_AAAAMMJJ-HHMM.zip contenant le dossier lui-même (comme Compress-Archive).
@@ -243,13 +248,13 @@ static class Archiveur
         return 0;
     }
 
-    static void Message(string texte, MessageBoxIcon icone)
+    internal static void Message(string texte, MessageBoxIcon icone)
     {
-        MessageBox.Show(texte, Titre, MessageBoxButtons.OK, icone);
+        Dialogue.Afficher(texte, icone, "OK");
     }
 
     static bool Question(string texte)
     {
-        return MessageBox.Show(texte, Titre, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+        return Dialogue.Afficher(texte, MessageBoxIcon.Question, "Oui", "Non") == 0;
     }
 }
