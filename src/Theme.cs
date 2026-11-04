@@ -31,13 +31,46 @@ static class Theme
     internal static Color FondBoutonSurvol { get { return Sombre ? Rvb(0x3E3E3E) : Rvb(0xF5F5F5); } }
     internal static Color FondBoutonAppui { get { return Sombre ? Rvb(0x333333) : Rvb(0xEDEDED); } }
     internal static Color BordureBouton { get { return Sombre ? Rvb(0x4A4A4A) : Rvb(0xD1D1D1); } }
-    internal static Color Accent { get { return Sombre ? Rvb(0x60CDFF) : Rvb(0x005FB8); } }
-    internal static Color AccentSurvol { get { return Sombre ? Rvb(0x5ABCEB) : Rvb(0x1A6FC0); } }
-    internal static Color AccentAppui { get { return Sombre ? Rvb(0x55ACD6) : Rvb(0x3381C9); } }
-    internal static Color TexteAccent { get { return Sombre ? Rvb(0x000000) : Rvb(0xFFFFFF); } }
+    internal static Color Accent { get { return Sombre ? AccentClair : AccentFonce; } }
+    // Survol et appui : accent à 90 % et 80 % sur le fond, comme Windows 11.
+    internal static Color AccentSurvol { get { return Melange(Accent, Fond, 0.9); } }
+    internal static Color AccentAppui { get { return Melange(Accent, Fond, 0.8); } }
+    internal static Color TexteAccent { get { return Luminance(Accent) > 0.5 ? Rvb(0x000000) : Rvb(0xFFFFFF); } }
     internal static Color PisteProgression { get { return Sombre ? Rvb(0x4A4A4A) : Rvb(0xDDDDDD); } }
 
+    // Couleur d'accent choisie dans Windows (Paramètres > Personnalisation > Couleurs) : nuance claire en sombre,
+    // nuance foncée en clair, comme les boutons de Windows 11 ; bleu par défaut si la palette est illisible.
+    // Redirigeables par les essais.
+    internal static Color AccentClair = LireAccent(1, 0x4CC2FF);
+    internal static Color AccentFonce = LireAccent(4, 0x0067C0);
+
     static Color Rvb(int rvb) { return Color.FromArgb(255, Color.FromArgb(rvb)); }
+
+    // AccentPalette : 8 couleurs de 4 octets (R, V, B, A), de la plus claire à la plus foncée.
+    static Color LireAccent(int rang, int defaut)
+    {
+        try
+        {
+            using (RegistryKey cle = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Accent"))
+            {
+                byte[] palette = cle == null ? null : cle.GetValue("AccentPalette") as byte[];
+                if (palette != null && palette.Length >= 4 * rang + 3)
+                    return Color.FromArgb(255, palette[4 * rang], palette[4 * rang + 1], palette[4 * rang + 2]);
+            }
+        }
+        catch { }
+        return Rvb(defaut);
+    }
+
+    static Color Melange(Color avant, Color fond, double part)
+    {
+        return Color.FromArgb(255,
+            (int)(avant.R * part + fond.R * (1 - part)),
+            (int)(avant.G * part + fond.G * (1 - part)),
+            (int)(avant.B * part + fond.B * (1 - part)));
+    }
+
+    static double Luminance(Color c) { return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) / 255; }
 
     static bool LireSombre()
     {
