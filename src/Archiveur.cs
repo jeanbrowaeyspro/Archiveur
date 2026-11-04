@@ -43,7 +43,10 @@ static class Archiveur
     [STAThread]
     static int Main(string[] args)
     {
+        // Avant toute fenêtre ou tout contrôle.
+        Theme.InitialiserDpi();
         Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
         MiseAJour.SupprimerAncienExe();
         bool quiet = Array.IndexOf(args, "--quiet") >= 0;
         if (Array.IndexOf(args, "--install") >= 0) return Installer(quiet);
