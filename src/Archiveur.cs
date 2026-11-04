@@ -16,9 +16,9 @@ using Microsoft.Win32;
 [assembly: AssemblyTitle("Archiveur")]
 [assembly: AssemblyProduct("Archiveur")]
 [assembly: AssemblyCompany("Jean Browaeys")]
-[assembly: AssemblyVersion("1.1.1.0")]
-[assembly: AssemblyFileVersion("1.1.1.0")]
-[assembly: AssemblyInformationalVersion("1.1.1")]
+[assembly: AssemblyVersion("1.1.2.0")]
+[assembly: AssemblyFileVersion("1.1.2.0")]
+[assembly: AssemblyInformationalVersion("1.1.2")]
 // Sans cette cible, .NET garde l'ancien comportement : chemins du zip en "\" au lieu de "/".
 [assembly: System.Runtime.Versioning.TargetFramework(".NETFramework,Version=v4.8")]
 
@@ -71,9 +71,10 @@ static class Archiveur
             }
         });
         travail.Start();
+        Thread verification = null;
         if (!quiet)
         {
-            MiseAJour.LancerVerification();
+            verification = MiseAJour.LancerVerification();
             Application.Run(new FenetreProgression(progression, travail));
         }
         travail.Join();
@@ -83,7 +84,7 @@ static class Archiveur
             if (!quiet) Message("Échec de l'archivage :\n\n" + string.Join("\n\n", erreurs), MessageBoxIcon.Error);
             else Console.Error.WriteLine(string.Join("\n", erreurs));
         }
-        if (!quiet) MiseAJour.Proposer();
+        if (!quiet) MiseAJour.Proposer(verification);
         return erreurs.Count == 0 ? 0 : 1;
     }
 

@@ -27,11 +27,13 @@ static class MiseAJour
     static readonly object verrou = new object();
     static readonly Version VersionCourante = Assembly.GetExecutingAssembly().GetName().Version;
 
-    // Interroge GitHub dans un thread d'arrière-plan : l'archivage n'est pas ralenti et la fin du processus
-    // n'attend pas la réponse. Toute erreur (hors ligne, proxy, quota) est ignorée.
-    public static void LancerVerification()
+    // Interroge GitHub dans un thread d'arrière-plan : l'archivage n'est pas ralenti. Toute erreur (hors ligne,
+    // proxy, quota) est ignorée.
+    public static Thread LancerVerification()
     {
-        new Thread(Verifier) { IsBackground = true }.Start();
+        var verification = new Thread(Verifier) { IsBackground = true };
+        verification.Start();
+        return verification;
     }
 
     internal static void Verifier()
@@ -52,8 +54,11 @@ static class MiseAJour
     }
 
     // À la fin de l'archivage : propose la dernière version connue si elle est plus récente et pas ignorée.
-    public static void Proposer()
+    // Attend d'abord la vérification (5 s au plus, délai de la requête), sinon un archivage court
+    // terminerait le processus avant la réponse de GitHub.
+    public static void Proposer(Thread verification)
     {
+        verification.Join(5000);
         if (!File.Exists(Archiveur.ExeInstalle)) return;
         Reglages reglages;
         lock (verrou) reglages = LireReglages();
