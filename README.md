@@ -18,6 +18,8 @@ Sous Windows 11, l'entrée apparaît dans le menu contextuel classique ("Affiche
 1. Télécharger `Archiveur.exe` depuis la [dernière release](https://github.com/jeanbrowaeyspro/Archiveur/releases/latest) (ou le compiler avec `build.cmd`, voir plus bas).
 2. Double-cliquer sur `Archiveur.exe` et répondre "Oui".
 
+Ou, sans question : télécharger et lancer [`Installer_Archiveur.bat`](https://github.com/jeanbrowaeyspro/Archiveur/raw/main/Installer_Archiveur.bat), qui installe la dernière release (ou met à jour une version déjà installée).
+
 L'exe se copie dans `%LOCALAPPDATA%\Programs\Archiveur` et enregistre le menu dans `HKEY_CURRENT_USER\Software\Classes\Directory`. Un nouveau double-clic propose la désinstallation.
 
 En ligne de commande :
