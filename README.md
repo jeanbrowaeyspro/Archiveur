@@ -8,6 +8,7 @@ Entrée "Archivage horodaté" dans le menu contextuel de l'Explorateur Windows :
 - Archive écrite sous un nom temporaire puis renommée : jamais de zip incomplet en cas d'erreur ou d'annulation.
 - Deux archives dans la même minute : suffixe `_2`, `_3`…
 - Fichiers ouverts en écriture par un autre logiciel (journaux…) archivés aussi.
+- Chemins de plus de 260 caractères acceptés, sans réglage Windows (LongPathsEnabled) ni droit administrateur.
 - Aucun script PowerShell, aucun droit administrateur, aucun runtime à installer (.NET Framework 4.8, fourni avec Windows 10 et 11).
 
 Sous Windows 11, l'entrée apparaît dans le menu contextuel classique ("Afficher plus d'options" ou Maj + clic droit).
@@ -28,6 +29,12 @@ Archiveur.exe <dossier> [<dossier> ...] [--quiet]
 ```
 
 `--quiet` : ni fenêtre ni message, erreurs sur la sortie d'erreur et code de retour 1.
+
+## Mise à jour
+
+Pendant un archivage, l'outil installé consulte la dernière release GitHub en arrière-plan (sans ralentir l'archivage ; hors ligne ou derrière un proxy bloquant, rien ne se passe). Si une version plus récente existe, elle est proposée à la fin de l'archivage : "Mettre à jour", "Plus tard" ou "Ignorer cette version".
+
+"Mettre à jour" télécharge le nouvel `Archiveur.exe` et remplace celui de `%LOCALAPPDATA%\Programs\Archiveur` (l'ancien est remis en place en cas d'échec) ; le menu contextuel ne change pas. La dernière version connue et la version ignorée sont mémorisées dans `%APPDATA%\Archiveur\settings.json`. Aucune vérification avec `--quiet`.
 
 ## Compilation
 
