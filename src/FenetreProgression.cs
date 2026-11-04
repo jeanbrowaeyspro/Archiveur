@@ -33,15 +33,14 @@ public class Progression
     }
 }
 
-public class FenetreProgression : Form
+public class FenetreProgression : FenetreTheme
 {
-    const string Titre = "Archivage horodaté";
     readonly Progression progression;
     readonly Thread travail;
     readonly Label lblDossier = new Label();
     readonly Label lblDetail = new Label();
-    readonly ProgressBar barre = new ProgressBar();
-    readonly Button btnAnnuler = new Button();
+    readonly BarreProgression barre = new BarreProgression();
+    readonly Button btnAnnuler = new BoutonTheme("Annuler", false);
     readonly System.Windows.Forms.Timer minuterie = new System.Windows.Forms.Timer();
     ITaskbarList3 barreDesTaches;
 
@@ -50,28 +49,30 @@ public class FenetreProgression : Form
         this.progression = progression;
         this.travail = travail;
 
-        Text = Titre;
-        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false;
         MinimizeBox = true;
-        StartPosition = FormStartPosition.CenterScreen;
-        AutoScaleMode = AutoScaleMode.Dpi;
-        AutoScaleDimensions = new SizeF(96f, 96f);
-        ClientSize = new Size(460, 132);
-        Font = SystemFonts.MessageBoxFont;
+        const int largeur = 480, contenu = 92, pied = Theme.MargePied * 2 + Theme.HauteurBouton;
+        const int interieur = largeur - 2 * Theme.Marge;
+        ClientSize = new Size(largeur, contenu + pied);
 
-        lblDossier.SetBounds(12, 12, 436, 20);
+        lblDossier.SetBounds(Theme.Marge, 20, interieur, 20);
         lblDossier.AutoEllipsis = true;
-        barre.SetBounds(12, 38, 436, 22);
-        barre.Maximum = 100;
-        lblDetail.SetBounds(12, 66, 436, 20);
+        lblDossier.BackColor = Theme.Fond;
+        lblDossier.ForeColor = Theme.Texte;
+        barre.SetBounds(Theme.Marge, 48, interieur, 6);
+        barre.BackColor = Theme.Fond;
+        lblDetail.SetBounds(Theme.Marge, 62, interieur, 20);
         lblDetail.AutoEllipsis = true;
-        btnAnnuler.SetBounds(358, 96, 90, 26);
-        btnAnnuler.Text = "Annuler";
+        lblDetail.BackColor = Theme.Fond;
+        lblDetail.ForeColor = Theme.TexteSecondaire;
+
+        // Barre de boutons en bas, sur un fond distinct comme le dialogue.
+        var barreBoutons = new Panel { Dock = DockStyle.Bottom, Height = pied, BackColor = Theme.FondPied };
+        btnAnnuler.AutoSize = false;
+        btnAnnuler.SetBounds(largeur - Theme.Marge - Theme.LargeurBouton, Theme.MargePied, Theme.LargeurBouton, Theme.HauteurBouton);
         btnAnnuler.Click += (s, e) => Annuler();
+        barreBoutons.Controls.Add(btnAnnuler);
         CancelButton = btnAnnuler;
-        Controls.AddRange(new Control[] { lblDossier, barre, lblDetail, btnAnnuler });
+        Controls.AddRange(new Control[] { lblDossier, barre, lblDetail, barreBoutons });
 
         minuterie.Interval = 100;
         minuterie.Tick += (s, e) => Rafraichir();
@@ -107,9 +108,9 @@ public class FenetreProgression : Form
 
         int pct = progression.Pourcentage;
         string nom = System.IO.Path.GetFileName(progression.Dossier);
-        Text = pct + " % - " + Titre;
+        Text = pct + " % - " + Archiveur.Libelle;
         lblDossier.Text = "Archivage de " + nom + (progression.Nombre > 1 ? "  (" + progression.Numero + "/" + progression.Nombre + ")" : "");
-        barre.Value = pct;
+        barre.Valeur = pct;
         if (!progression.Annule)
             lblDetail.Text = Taille(Interlocked.Read(ref progression.Fait)) + " / " + Taille(Interlocked.Read(ref progression.Total)) + "   " + progression.Fichier;
 
