@@ -83,12 +83,14 @@ static class Archiveur
     // Le zip est écrit sous un nom temporaire puis renommé : jamais de zip incomplet en cas d'échec ou d'annulation.
     public static string Zipper(string chemin, Progression progression)
     {
+        // GetFullPath rend aussi le nom long réel d'un nom court 8.3 (PROJET~1) passé par l'Explorateur.
         string dossier = Path.GetFullPath(chemin.Trim('"')).TrimEnd('\\');
+        if (string.IsNullOrEmpty(Path.GetDirectoryName(dossier))) throw new InvalidOperationException("Impossible de zipper la racine d'un lecteur.");
+        // Tous les chemins qui suivent dérivent de la forme étendue : pas de limite de 260 caractères.
+        dossier = Etendu(dossier);
         if (!Directory.Exists(dossier)) throw new DirectoryNotFoundException("Dossier introuvable.");
-        string parent = Path.GetDirectoryName(dossier);
-        if (string.IsNullOrEmpty(parent)) throw new InvalidOperationException("Impossible de zipper la racine d'un lecteur.");
 
-        string baseNom = Path.Combine(parent, Path.GetFileName(dossier) + "_" + DateTime.Now.ToString("yyyyMMdd-HHmm"));
+        string baseNom = dossier + "_" + DateTime.Now.ToString("yyyyMMdd-HHmm");
         string zip = baseNom + ".zip";
         for (int i = 2; File.Exists(zip); i++) zip = baseNom + "_" + i + ".zip";
 
@@ -147,6 +149,15 @@ static class Archiveur
             catch (IOException ex) { throw new IOException(nom + " : " + ex.Message, ex); }
             catch (UnauthorizedAccessException ex) { throw new IOException(nom + " : " + ex.Message, ex); }
         }
+    }
+
+    // Forme étendue d'un chemin complet (\\?\C:\... ou \\?\UNC\serveur\partage\...) : les API Windows
+    // acceptent alors plus de 260 caractères, sans le réglage LongPathsEnabled ni droits administrateur.
+    internal static string Etendu(string chemin)
+    {
+        if (chemin.StartsWith(@"\\?\") || chemin.StartsWith(@"\\.\")) return chemin;
+        if (chemin.StartsWith(@"\\")) return @"\\?\UNC\" + chemin.Substring(2);
+        return @"\\?\" + chemin;
     }
 
     static string NomEntree(string racine, string dossier, string chemin)
