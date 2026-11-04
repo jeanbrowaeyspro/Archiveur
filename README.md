@@ -14,7 +14,7 @@ Sous Windows 11, l'entrée apparaît dans le menu contextuel classique ("Affiche
 
 ## Installation
 
-1. Compiler avec `build.cmd` (voir plus bas) : l'exe est produit dans `Outils\Archiveur.exe`.
+1. Télécharger `Archiveur.exe` depuis la [dernière release](https://github.com/jeanbrowaeyspro/Archiveur/releases/latest) (ou le compiler avec `build.cmd`, voir plus bas).
 2. Double-cliquer sur `Archiveur.exe` et répondre "Oui".
 
 L'exe se copie dans `%LOCALAPPDATA%\Programs\Archiveur` et enregistre le menu dans `HKEY_CURRENT_USER\Software\Classes\Directory`. Un nouveau double-clic propose la désinstallation.
