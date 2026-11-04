@@ -16,9 +16,9 @@ using Microsoft.Win32;
 [assembly: AssemblyTitle("Archiveur")]
 [assembly: AssemblyProduct("Archiveur")]
 [assembly: AssemblyCompany("Jean Browaeys")]
-[assembly: AssemblyVersion("1.1.2.0")]
-[assembly: AssemblyFileVersion("1.1.2.0")]
-[assembly: AssemblyInformationalVersion("1.1.2")]
+[assembly: AssemblyVersion("1.1.3.0")]
+[assembly: AssemblyFileVersion("1.1.3.0")]
+[assembly: AssemblyInformationalVersion("1.1.3")]
 // Sans cette cible, .NET garde l'ancien comportement : chemins du zip en "\" au lieu de "/".
 [assembly: System.Runtime.Versioning.TargetFramework(".NETFramework,Version=v4.8")]
 
