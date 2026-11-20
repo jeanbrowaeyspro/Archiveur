@@ -13,6 +13,16 @@ Entrée "Archivage horodaté" dans le menu contextuel de l'Explorateur Windows :
 
 Sous Windows 11, l'entrée apparaît dans le menu contextuel classique ("Afficher plus d'options" ou Maj + clic droit).
 
+## Solution TwinCAT : connexion à l'automate sans rechargement
+
+Pour qu'un collègue qui dézippe une solution TwinCAT 3 puisse se connecter à l'automate en ligne sans recharger le programme, l'archive doit contenir le fichier `.compileinfo` de la dernière compilation (dossier `_CompileInfo` du projet PLC). À la connexion, TwinCAT compile à partir de ce fichier et compare le résultat avec le programme de l'automate : si rien ne change, il se connecte sans rechargement. Conditions :
+
+- Archive faite après le dernier chargement dans l'automate : le `.compileinfo` le plus récent doit correspondre au programme qui tourne (pas de compilation de sources modifiées entre le chargement et l'archivage).
+- Pas de "Clean" ni de "Rebuild all" sur le poste du collègue avant la connexion : ces commandes effacent le `.compileinfo` et recompilent tout, ce qui oblige à recharger.
+- Mêmes bibliothèques sur le poste du collègue (mêmes versions des bibliothèques Beckhoff et des bibliothèques maison) et version de TwinCAT compatible : sinon le code compilé diffère et TwinCAT demande un changement en ligne ou un rechargement.
+
+Ces conditions ne concernent pas un projet d'IHM TwinCAT HMI, qui se compile et se publie normalement.
+
 ## Installation
 
 1. Télécharger `Archiveur.exe` depuis la [dernière release](https://github.com/jeanbrowaeyspro/Archiveur/releases/latest) (ou le compiler avec `build.cmd`, voir plus bas).
