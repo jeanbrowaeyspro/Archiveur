@@ -13,6 +13,28 @@ Entrée "Archivage horodaté" dans le menu contextuel de l'Explorateur Windows :
 
 Sous Windows 11, l'entrée apparaît dans le menu contextuel classique ("Afficher plus d'options" ou Maj + clic droit).
 
+## Solution TwinCAT
+
+Un dossier qui contient un `.sln` à sa racine et un `.tsproj` ou `.hmiproj` (dans le dossier ou jusqu'à deux niveaux en dessous) est reconnu comme une solution TwinCAT. Une question propose alors :
+
+- **Optimisé TwinCAT** : archive légère pour transmettre la solution à un collègue, qui la dézippe, ouvre le `.sln` et continue le travail.
+- **Tout le dossier** : archivage normal.
+- **Annuler** : rien n'est archivé.
+
+La fenêtre de progression indique "Solution TwinCAT" à côté du nom du dossier en mode optimisé. Avec `--quiet`, le mode optimisé est choisi sans question.
+
+Contenu de l'archive optimisée :
+
+| Contenu | Rôle |
+|---|---|
+| Fichiers que git ne fait pas ignorer : suivis, avec leurs modifications non commitées, et nouveaux | Le travail en cours, tel qu'il est sur le disque |
+| Dossier `.git` complet | Tout l'historique : `git status` et `git log` identiques à l'original |
+| Dernier `.compileinfo` du dossier `_CompileInfo` de chaque projet PLC | Connexion à l'automate en ligne sans recharger le programme |
+
+Les paquets NuGet (`Packages`), `bin`, `obj`, `.vs`, `.engineering_servers` et les anciens `.compileinfo` ne sont pas archivés. Les paquets NuGet de l'IHM sont restaurés à la première compilation de la solution (accès à Internet ou au flux NuGet nécessaire).
+
+Sans git (git.exe absent du PATH ou dossier qui n'est pas un dépôt git) : archivage sans `.git`, avec une liste d'exclusion fixe reprise du `.gitignore` TwinCAT3 de GitHub (`.vs`, `bin`, `obj`, `Packages`, `.engineering_servers`, `_Boot`, `_CompileInfo` sauf le dernier `.compileinfo`, `_Libraries`, `*.bak`, `*.user`, `*.~u`, `*.tclrs`, `debug.log`).
+
 ## Solution TwinCAT : connexion à l'automate sans rechargement
 
 Pour qu'un collègue qui dézippe une solution TwinCAT 3 puisse se connecter à l'automate en ligne sans recharger le programme, l'archive doit contenir le fichier `.compileinfo` de la dernière compilation (dossier `_CompileInfo` du projet PLC). À la connexion, TwinCAT compile à partir de ce fichier et compare le résultat avec le programme de l'automate : si rien ne change, il se connecte sans rechargement. Conditions :
@@ -40,7 +62,7 @@ Archiveur.exe --uninstall [--quiet]
 Archiveur.exe <dossier> [<dossier> ...] [--quiet]
 ```
 
-`--quiet` : ni fenêtre ni message, erreurs sur la sortie d'erreur et code de retour 1.
+`--quiet` : ni fenêtre ni message (solution TwinCAT archivée en mode optimisé), erreurs sur la sortie d'erreur et code de retour 1.
 
 ## Mise à jour
 

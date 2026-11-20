@@ -15,10 +15,11 @@ public class Progression
     public volatile string Dossier = "";
     public volatile int Numero, Nombre;
     public volatile bool Annule;
+    public volatile bool TwinCAT;
 
     public void Demarrer(string dossier, int numero, int nombre)
     {
-        Dossier = dossier; Numero = numero; Nombre = nombre; Fichier = "";
+        Dossier = dossier; Numero = numero; Nombre = nombre; Fichier = ""; TwinCAT = false;
         Interlocked.Exchange(ref Total, 0);
         Interlocked.Exchange(ref Fait, 0);
     }
@@ -109,7 +110,7 @@ public class FenetreProgression : FenetreTheme
         int pct = progression.Pourcentage;
         string nom = System.IO.Path.GetFileName(progression.Dossier);
         Text = pct + " % - " + Archiveur.Libelle;
-        lblDossier.Text = "Archivage de " + nom + (progression.Nombre > 1 ? "  (" + progression.Numero + "/" + progression.Nombre + ")" : "");
+        lblDossier.Text = "Archivage de " + nom + (progression.TwinCAT ? " - Solution TwinCAT" : "") + (progression.Nombre > 1 ? "  (" + progression.Numero + "/" + progression.Nombre + ")" : "");
         barre.Valeur = pct;
         if (!progression.Annule)
             lblDetail.Text = Taille(Interlocked.Read(ref progression.Fait)) + " / " + Taille(Interlocked.Read(ref progression.Total)) + "   " + progression.Fichier;
