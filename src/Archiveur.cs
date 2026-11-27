@@ -185,7 +185,8 @@ static class Archiveur
             progression.Fichier = nom;
             try
             {
-                ZipArchiveEntry entree = archive.CreateEntry(nom, CompressionLevel.Optimal);
+                // Les fichiers du dépôt git (.git\) sont déjà compressés : stockés tels quels, sans perte de temps.
+                ZipArchiveEntry entree = archive.CreateEntry(nom, DansGit(dossier, f) ? CompressionLevel.NoCompression : CompressionLevel.Optimal);
                 entree.LastWriteTime = DateZip(File.GetLastWriteTime(f));
                 // FileShare.ReadWrite : accepte aussi les fichiers ouverts par un autre logiciel (journaux…).
                 using (var source = new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
@@ -203,6 +204,16 @@ static class Archiveur
             catch (IOException ex) { throw new IOException(nom + " : " + ex.Message, ex); }
             catch (UnauthorizedAccessException ex) { throw new IOException(nom + " : " + ex.Message, ex); }
         }
+    }
+
+    // Vrai si le fichier est dans un dossier ".git" du dossier archivé (dépôt à la racine ou imbriqué).
+    static bool DansGit(string dossier, string fichier)
+    {
+        string relatif = fichier.Substring(dossier.Length).TrimStart('\\');
+        string[] parties = relatif.Split('\\');
+        for (int i = 0; i < parties.Length - 1; i++)
+            if (string.Equals(parties[i], ".git", StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 
     // Parcourt récursivement un dossier : fichiers et sous-dossiers vides, sauf les dossiers et fichiers exclus
